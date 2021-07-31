@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from 'bootstrap/table.html' import render_table %}
+
+{% block header %}
+  <h1>{% block title %}Posts{% endblock %}</h1>
+  {% if g.user %}
+    <a class="action" href="{{ url_for('blog.create') }}">New</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {% for post in posts %}
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title">{{ post.title }}</h2>
+        <h6 class="card-subtitle">by {{ post.author.username }} on {{ post.created.strftime('%Y-%m-%d') }}</h6>
+        {% if g.user['id'] == post['author_id'] %}
+          <a class="btn btn-primary" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a>
+        {% endif %}
+        <p class="card-text">{{ post['body'] }}</p>
+      </div>
+    </div>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+{% endblock %}
