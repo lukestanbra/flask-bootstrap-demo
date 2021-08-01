@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import os
 import pytest
 from werkzeug.security import generate_password_hash
 
@@ -8,7 +8,7 @@ from demo import db
 from demo import init_db
 from demo.auth.models import User
 from demo.blog.models import Post
-from flask import g
+from flask import g, url_for
 
 _user1_pass = generate_password_hash("test")
 _user2_pass = generate_password_hash("other")
@@ -18,7 +18,11 @@ _user2_pass = generate_password_hash("other")
 def app():
   """Create and configure a new app instance for each test."""
   # create the app with common test config
-  app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
+  app = create_app({
+    "TESTING": True,
+    "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+    "WTF_CSRF_ENABLED": False
+    })
 
   # create the database and load test data
   # set _password to pre-generated hashes, since hashing for each test is slow
@@ -67,15 +71,27 @@ class AuthActions:
 
   def login(self, username="test", password="test"):
     with self._app_cxt:
-      self._client.get("/auth/login")
+      self._client.get(url_for("auth.login"))
       return self._client.post(
-        "/auth/login", data={"username": username, "password": password, "csrf_token": g.csrf_token}
+        url_for("auth.login"), data={"username": username, "password": password, "csrf_token": g.get('csrf_token')},
+        follow_redirects=True
       )
 
   def logout(self):
-    return self._client.get("/auth/logout")
+    return self._client.get(url_for("auth.logout"))
 
 
 @pytest.fixture
 def auth(client, app_cxt):
   return AuthActions(client, app_cxt)
+
+# Allows the use of url_for in tests
+@pytest.fixture(autouse=True)
+def _push_request_context(request, app):
+  ctx = app.test_request_context()  # create context
+  ctx.push()  # push
+
+  def teardown():
+      ctx.pop()  # pop
+
+  request.addfinalizer(teardown)  # set teardown

@@ -63,7 +63,7 @@ def update(id):
     update_form.title.data = post.title
     update_form.body.data = post.body
 
-  if request.method == "POST":
+  if request.method == "POST" and update_form.validate_on_submit():
     if update_form.delete.data:
       return redirect(url_for('blog.delete', id=id), code=307)
     title = update_form.title.data

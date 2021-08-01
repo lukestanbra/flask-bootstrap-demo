@@ -1,17 +1,17 @@
 import pytest
-from flask import g, session
+from flask import g, session, url_for
 from demo.auth.models import User
 
 #  print(response.get_data(as_text=True))
 
 def test_register(client, app, app_cxt):
-  assert client.get("/auth/register").status_code == 200
+  assert client.get(url_for("auth.register")).status_code == 200
 
   response = client.post(
-    "/auth/register",
-    data={"username": "abc", "password": "abc", "csrf_token": g.csrf_token}
+    url_for("auth.register"),
+    data={"username": "abc", "password": "abc", "csrf_token": g.get('csrf_token')}
   )
-  assert "http://localhost/auth/login" == response.location
+  assert f"http://localhost{url_for('auth.login')}" == response.location
 
 def test_user_password(app):
   user = User(username="abc", password="abc")
@@ -27,16 +27,16 @@ def test_user_password(app):
   ),
 )
 def test_register_validate_input(client, app_cxt, username, password, message):
-  assert client.get("/auth/register").status_code == 200
+  assert client.get(url_for("auth.register")).status_code == 200
   response = client.post(
-    "/auth/register", data={"username": username, "password": password, "csrf_token": g.csrf_token}
+    url_for("auth.register"), data={"username": username, "password": password, "csrf_token": g.get('csrf_token')}
   )
   assert message in response.data
 
 def test_login(client, auth):
   with client:
     response = auth.login()
-    assert response.location == "http://localhost/"
+    assert response.history[0].location in f"http://localhost{url_for('blog.index')}"
     assert 'user_id' in session
 
 @pytest.mark.parametrize(
