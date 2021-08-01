@@ -33,10 +33,9 @@ def test_register_validate_input(client, app_cxt, username, password, message):
   )
   assert message in response.data
 
-def test_login(client, app_cxt, auth):
-  r = client.get("/auth/login")
+def test_login(client, auth):
   with client:
-    response = auth.login(g.csrf_token)
+    response = auth.login()
     assert response.location == "http://localhost/"
     assert 'user_id' in session
 
@@ -44,16 +43,13 @@ def test_login(client, app_cxt, auth):
     ("username", "password", "message"),
     (("a", "test", b"Incorrect username."), ("test", "abcde", b"Incorrect password.")),
 )
-def test_login_validate_input(client, app_cxt, auth, username, password, message):
-  r = client.get("/auth/login")
+def test_login_validate_input(client, auth, username, password, message):
   with client:
-    response = auth.login(g.csrf_token, username, password)
-    print(response.data)
+    response = auth.login(username, password)
     assert message in response.data
 
-def test_logout(client, app_cxt, auth):
-  r = client.get("/auth/login")
-  response = auth.login(g.csrf_token)
+def test_logout(client, auth):
+  auth.login()
   with client:
     auth.logout()
     assert 'user_id' not in session

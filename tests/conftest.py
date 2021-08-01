@@ -8,6 +8,7 @@ from demo import db
 from demo import init_db
 from demo.auth.models import User
 from demo.blog.models import Post
+from flask import g
 
 _user1_pass = generate_password_hash("test")
 _user2_pass = generate_password_hash("other")
@@ -60,18 +61,21 @@ def runner(app):
 
 
 class AuthActions:
-  def __init__(self, client):
+  def __init__(self, client, app_cxt):
     self._client = client
+    self._app_cxt = app_cxt
 
-  def login(self, token, username="test", password="test"):
-    return self._client.post(
-      "/auth/login", data={"username": username, "password": password, "csrf_token": token}
-    )
+  def login(self, username="test", password="test"):
+    with self._app_cxt:
+      self._client.get("/auth/login")
+      return self._client.post(
+        "/auth/login", data={"username": username, "password": password, "csrf_token": g.csrf_token}
+      )
 
   def logout(self):
     return self._client.get("/auth/logout")
 
 
 @pytest.fixture
-def auth(client):
-  return AuthActions(client)
+def auth(client, app_cxt):
+  return AuthActions(client, app_cxt)
